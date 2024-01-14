@@ -4,7 +4,7 @@ Desktop (win 7/10/11) release: [here](https://drive.google.com/file/d/1okFJQdnsY
 
 [This application uses a modular system in the form of plugins that can be developed via its API]
 
-[IMPORTANT]: Infuser version x1.0 does NOT have a controlled environment such as a Sandbox
+[IMPORTANT]: Infuser version x1.0 do NOT have a controlled environment such as a Sandbox
                      to limit the permission(s) of the Plugin(s) used during application runtime. 
 # API Implementation
 
