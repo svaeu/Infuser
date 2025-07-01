@@ -149,9 +149,9 @@ public final class PacketHandler extends PacketExecutor {
         channelTitle = new String(channelID, StandardCharsets.UTF_8);
 
         switch (actionType) {
-            case CREATE -> actionHandler.onCreateChannel(channelTitle, channelMetaBuffer.getInt(), channelMetaBuffer.getInt());
-            case META_UPDATE -> actionHandler.onMetaUpdate(channelTitle, channelMetaBuffer.getInt(), channelMetaBuffer.getInt());
-            case REMOVE -> actionHandler.onRemoveChannel(channelTitle);
+            case CREATE -> actionHandler.createChannel(channelTitle, channelMetaBuffer.getInt(), channelMetaBuffer.getInt());
+            case META_UPDATE -> actionHandler.updateChannelMeta(channelTitle, channelMetaBuffer.getInt(), channelMetaBuffer.getInt());
+            case REMOVE -> actionHandler.removeChannel(channelTitle);
             case KEY_UPDATE -> actionHandler.onKeyUpdate(channelTitle, channelMetaBuffer, channelID);
         }
         resumeClient();

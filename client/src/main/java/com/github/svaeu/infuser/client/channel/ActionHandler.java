@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.util.Map;
+import java.util.Optional;
 
 public class ActionHandler {
 
@@ -18,34 +19,38 @@ public class ActionHandler {
         this.client = client;
     }
 
-    public void onCreateChannel(String channelTitle, int strength, int threshold) {
-        final Channel newChannel;
+    public void createChannel(String title, int strength, int threshold) {
+        final Channel channel;
 
-        newChannel = new Channel();
-        newChannel.setTitle(channelTitle);
-        newChannel.setStrength(strength);
-        newChannel.setThreshold(threshold);
+        channel = Channel.builder()
+                .title(title)
+                .strength(strength)
+                .threshold(threshold)
+                .build();
 
-        client.getChannels().add(newChannel);
+        client.getChannels().add(channel);
     }
 
-    public void onMetaUpdate(String channelTitle, int strength, int threshold) {
-        for(Channel channel : client.getChannels())
-            if(channel.getTitle().equalsIgnoreCase(channelTitle)) {
-                channel.setStrength(strength);
-                channel.setThreshold(threshold);
-            }
+    public void updateChannelMeta(String title, int strength, int threshold) {
+        findChannelByTitle(title)
+                .map(channel -> {
+                    channel.setStrength(strength);
+                    channel.setThreshold(threshold);
+                    return true;
+                });
     }
 
-    public void onRemoveChannel(String channelTitle) {
-        client.getChannels().removeIf(channel -> channel.getTitle().equalsIgnoreCase(channelTitle));
+    public void removeChannel(String channelTitle) {
+        client.getChannels().removeIf(
+                channel -> channel.getTitle().equalsIgnoreCase(channelTitle)
+        );
     }
 
-    public void onKeyUpdate(String channelTitle, ByteBuffer channelMetaBuffer, byte[] channelID) throws GeneralSecurityException, IOException {
-        final Channel updatedChannel;
-        final Map.Entry<byte[], byte[]> saltedKeyMap;
+    public void onKeyUpdate(String title, ByteBuffer channelMetaBuffer, byte[] channelID) throws GeneralSecurityException, IOException {
         final byte[] bundledKeys, saltedPubKey, encryptedRoomKey;
-        final ByteBuffer keyBuffer;
+        final ByteBuffer keyBuffer, updatePacket;
+        final Optional<Channel> channelOpt;
+        final Channel updatedChannel;
 
         bundledKeys = new byte[channelMetaBuffer.getInt()];
         channelMetaBuffer.get(bundledKeys);
@@ -58,21 +63,62 @@ public class ActionHandler {
         encryptedRoomKey = new byte[keyBuffer.getInt()];
         keyBuffer.get(encryptedRoomKey);
 
-        saltedKeyMap = ECDHEUtil.getDeserializedSaltedKey(saltedPubKey).entrySet().iterator().next();
+        channelOpt = findChannelByTitle(title);
+        if(channelOpt.isEmpty()) return;
 
-        updatedChannel = client.getChannels().stream().filter(channel -> channel.getTitle()
-                .equalsIgnoreCase(channelTitle)).findFirst().orElse(null);
+        updatedChannel = channelOpt.get();
 
-        if(updatedChannel == null) return;
+        updatedChannel.setChannelKey(
+                deriveChannelKey(
+                        saltedPubKey, encryptedRoomKey, updatedChannel)
+        );
+        updatedChannel.setStrength(updatedChannel.getStrength() + 1);
 
-        updatedChannel.setChannelKey(new SecretKeySpec(client.getPacketListener().getDecryptedDataBytes(encryptedRoomKey,
-                ECDHEUtil.deriveAES256Key(ECDHEUtil.getPublicKeyFromBytes(saltedKeyMap.getKey()), updatedChannel.getTrxnKey(),
-                        saltedKeyMap.getValue(), "KeyTrxn")), "AES"));
-        updatedChannel.setStrength(updatedChannel.getStrength() + 1); //correcting strength as client is expected to be added.
-
-        client.getPacketStream().writeEncryptedPacket(Packet.CHANNEL_UPDATE, ByteBuffer.allocate(8 + channelID.length).putInt(channelID.length)
-                .put(channelID).putInt(new byte[0].length).put(new byte[0]).array(), client.getSessionKey());
-
+        notifyChannelUpdate(channelID);
         client.setCrtChannel(updatedChannel);
+    }
+
+    private SecretKeySpec deriveChannelKey(byte[] saltedPubKey, byte[] encryptedRoomKey, Channel updatedChannel) throws GeneralSecurityException {
+        final Map.Entry<byte[], byte[]> saltedKeyMap;
+        final byte[] decryptedKey;
+
+        saltedKeyMap = ECDHEUtil
+                .getDeserializedSaltedKey(saltedPubKey)
+                .entrySet()
+                .iterator()
+                .next();
+
+        decryptedKey = client.getPacketListener().getDecryptedDataBytes(
+                encryptedRoomKey,
+                ECDHEUtil.deriveAES256Key(
+                        ECDHEUtil.getPublicKeyFromBytes(saltedKeyMap.getKey()),
+                        updatedChannel.getTrxnKey(),
+                        saltedKeyMap.getValue(),
+                        "KeyTrxn"
+                )
+        );
+        return new SecretKeySpec(decryptedKey, client.CIPHER_ALGO);
+    }
+
+    private void notifyChannelUpdate(byte[] channelID) throws GeneralSecurityException, IOException {
+        final ByteBuffer updateBuffer;
+
+        updateBuffer = ByteBuffer.allocate(8 + channelID.length)
+                .putInt(channelID.length)
+                .put(channelID)
+                .putInt(new byte[0].length)
+                .put(new byte[0]);
+
+        client.getPacketStream().writeEncryptedPacket(
+                Packet.CHANNEL_UPDATE,
+                updateBuffer.array(),
+                client.getSessionKey()
+        );
+    }
+
+    private Optional<Channel> findChannelByTitle(String title) {
+        return client.getChannels().stream()
+                .filter(channel -> channel.getTitle().equalsIgnoreCase(title))
+                .findFirst();
     }
 }
