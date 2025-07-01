@@ -1,8 +1,13 @@
 package com.github.svaeu.infuser.client.channel;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import javax.crypto.SecretKey;
 import java.security.PrivateKey;
 
+@Setter
+@Getter
 public class Channel {
 
     private String title;
@@ -11,44 +16,37 @@ public class Channel {
     private SecretKey channelKey;
     private PrivateKey trxnKey;
 
-    public int getThreshold() {
-        return threshold;
+    private Channel() {}
+
+    public static ChannelBuilder builder() {
+        return new ChannelBuilder();
     }
 
-    public int getStrength() {
-        return strength;
-    }
+    public static class ChannelBuilder {
+        private final Channel channel;
 
-    public String getTitle() {
-        return title;
-    }
+        public ChannelBuilder() {
+            this.channel = new Channel();
+        }
 
-    public void setStrength(int strength) {
-        this.strength = strength;
-    }
+        public ChannelBuilder title(String title) {
+            channel.setTitle(title);
+            return this;
+        }
 
-    public void setThreshold(int threshold) {
-        this.threshold = threshold;
-    }
+        public ChannelBuilder strength(int strength) {
+            channel.setStrength(strength);
+            return this;
+        }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+        public ChannelBuilder threshold(int threshold) {
+            channel.setThreshold(threshold);
+            return this;
+        }
 
-    public PrivateKey getTrxnKey() {
-        return trxnKey;
-    }
-
-    public void setTrxnKey(PrivateKey trxnKey) {
-        this.trxnKey = trxnKey;
-    }
-
-    public SecretKey getChannelKey() {
-        return channelKey;
-    }
-
-    public void setChannelKey(SecretKey channelKey) {
-        this.channelKey = channelKey;
+        public Channel build() {
+            return channel;
+        }
     }
 
     @Override
