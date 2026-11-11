@@ -9,7 +9,6 @@ public class SessionLogger {
 
     private static PrintWriter logWriter = null;
 
-    //server session logger file initialization
     static {
         File logFile;
         String basePath;

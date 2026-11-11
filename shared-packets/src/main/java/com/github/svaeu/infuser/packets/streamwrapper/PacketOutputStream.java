@@ -47,10 +47,6 @@ public abstract class PacketOutputStream extends DataOutputStream {
     private void writeNFlushBuffer(byte[] packetMeta, byte[] data) throws IOException {
         write(packetMeta);
         write(data);
-        /*
-        some data might still remain that is unable to fill the current
-        buffer so it needs to be flushed out :)
-         */
         flush();
     }
 

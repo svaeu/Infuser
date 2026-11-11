@@ -10,15 +10,9 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.jline.utils.InfoCmp;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -48,9 +42,6 @@ public class CLI implements ClientMode {
     public void displayMessage(String message) {
         ConsoleLogger.log(reader, message, "");
     }
-
-    @Override
-    public void displayMedia(byte[] mediaData) {}
 
     @Override
     public String prompt(String message) throws ExecutionException, InterruptedException {

@@ -15,7 +15,6 @@ public abstract class PacketExecutor {
     protected abstract void handleMessagePacket(Packet packet, Object... params) throws GeneralSecurityException, PacketParsingException, IOException, MalformedPacketException;
     protected abstract void handleCommandPacket(Object... params) throws PacketParsingException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IOException;
     protected abstract void handleKeyAction(Object... params) throws GeneralSecurityException, PacketParsingException, IOException;
-    protected abstract void handleMediaPacket(Object... params);
     protected abstract void handleChannelUpdate(Object... params) throws PacketParsingException, GeneralSecurityException, MalformedPacketException, IOException, InterruptedException;
     protected abstract void handleAuthenticationAction(Object... params) throws PacketParsingException, GeneralSecurityException, InterruptedException, IOException, ExecutionException;
     protected abstract void handleFingerprintVer(Object... params) throws PacketParsingException, IOException, GeneralSecurityException;
@@ -27,7 +26,6 @@ public abstract class PacketExecutor {
             case CHAT_MESSAGE -> handleMessagePacket(Packet.CHAT_MESSAGE, data);
             case COMMAND_REQ -> handleCommandPacket(data);
             case KEY_ACT -> handleKeyAction(data);
-            case MEDIA_UPLOAD -> handleMediaPacket(data);
             case SRV_FINGERPRINT -> handleFingerprintVer(data);
             case EC_SIGNATURE -> handleECSignature(data);
             case SRV_MESSAGE -> handleMessagePacket(Packet.SRV_MESSAGE, data);

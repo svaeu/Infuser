@@ -1,6 +1,7 @@
 package com.github.svaeu.infuser.packets.encryption;
 
-import org.bouncycastle.jcajce.provider.asymmetric.RSA;
+import com.github.svaeu.infuser.packets.PacketBuffers;
+import com.github.svaeu.infuser.packets.exceptions.PacketParsingException;
 
 import java.nio.ByteBuffer;
 import java.security.*;
@@ -48,17 +49,14 @@ public class RSAUtil {
         return byteBuffer.array();
     }
 
-    public static Map<byte[], byte[]> getDeserializedSignedKey(byte[] signedKeyBytes) {
+    public static Map<byte[], byte[]> getDeserializedSignedKey(byte[] signedKeyBytes) throws PacketParsingException {
         final ByteBuffer byteBuffer;
         final byte[] ecPublicKey, signatureBytes;
 
         byteBuffer = ByteBuffer.wrap(signedKeyBytes);
 
-        ecPublicKey = new byte[byteBuffer.getInt()];
-        byteBuffer.get(ecPublicKey);
-
-        signatureBytes = new byte[byteBuffer.getInt()];
-        byteBuffer.get(signatureBytes);
+        ecPublicKey = PacketBuffers.readLengthPrefixed(byteBuffer, "EC public key");
+        signatureBytes = PacketBuffers.readLengthPrefixed(byteBuffer, "signature");
 
         return Map.of(
                 ecPublicKey, signatureBytes

@@ -2,7 +2,9 @@ package com.github.svaeu.infuser.client.channel;
 
 import com.github.svaeu.infuser.client.TCPClient;
 import com.github.svaeu.infuser.packets.Packet;
+import com.github.svaeu.infuser.packets.PacketBuffers;
 import com.github.svaeu.infuser.packets.encryption.ECDHEUtil;
+import com.github.svaeu.infuser.packets.exceptions.PacketParsingException;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
@@ -46,22 +48,18 @@ public class ActionHandler {
         );
     }
 
-    public void onKeyUpdate(String title, ByteBuffer channelMetaBuffer, byte[] channelID) throws GeneralSecurityException, IOException {
+    public void onKeyUpdate(String title, ByteBuffer channelMetaBuffer, byte[] channelID) throws GeneralSecurityException, IOException, PacketParsingException {
         final byte[] bundledKeys, saltedPubKey, encryptedRoomKey;
         final ByteBuffer keyBuffer, updatePacket;
         final Optional<Channel> channelOpt;
         final Channel updatedChannel;
 
-        bundledKeys = new byte[channelMetaBuffer.getInt()];
-        channelMetaBuffer.get(bundledKeys);
+        bundledKeys = PacketBuffers.readLengthPrefixed(channelMetaBuffer, "key bundle");
 
         keyBuffer = ByteBuffer.wrap(bundledKeys);
 
-        saltedPubKey = new byte[keyBuffer.getInt()];
-        keyBuffer.get(saltedPubKey);
-
-        encryptedRoomKey = new byte[keyBuffer.getInt()];
-        keyBuffer.get(encryptedRoomKey);
+        saltedPubKey = PacketBuffers.readLengthPrefixed(keyBuffer, "salted public key");
+        encryptedRoomKey = PacketBuffers.readLengthPrefixed(keyBuffer, "encrypted room key");
 
         channelOpt = findChannelByTitle(title);
         if(channelOpt.isEmpty()) return;

@@ -80,8 +80,6 @@ public class ECDHEUtil {
 
         encodedPubKey = publicKey.getEncoded();
 
-        // 4 bytes for respective byte array lengths (salt and public key) included with
-        // their actual sizes:
         byteBuffer = ByteBuffer.allocate(4 + salt.length + 4 + encodedPubKey.length)
                 .putInt(salt.length)
                 .put(salt)
@@ -91,21 +89,42 @@ public class ECDHEUtil {
         return byteBuffer.array();
     }
 
-    public static Map<byte[], byte[]> getDeserializedSaltedKey(byte[] saltedKey) {
+    // Upper bounds for fields read off the wire (a P-256 X.509 key is 91 bytes, the salt 32).
+    public static final int MAX_SALT_LENGTH = 64;
+    public static final int MAX_PUBLIC_KEY_LENGTH = 256;
+
+    public static Map<byte[], byte[]> getDeserializedSaltedKey(byte[] saltedKey) throws InvalidKeyException {
         final ByteBuffer byteBuffer;
         final byte[] ecPubKey, salt;
 
         byteBuffer = ByteBuffer.wrap(saltedKey);
 
-        salt = new byte[byteBuffer.getInt()];
+        salt = new byte[readBoundedLength(byteBuffer, MAX_SALT_LENGTH, "salt")];
         byteBuffer.get(salt);
 
-        ecPubKey = new byte[byteBuffer.getInt()];
+        ecPubKey = new byte[readBoundedLength(byteBuffer, MAX_PUBLIC_KEY_LENGTH, "public key")];
         byteBuffer.get(ecPubKey);
 
         return Map.of(
                 ecPubKey, salt
         );
+    }
+
+    private static int readBoundedLength(ByteBuffer buffer, int max, String field) throws InvalidKeyException {
+        final int length;
+
+        if (buffer.remaining() < Integer.BYTES)
+            throw new InvalidKeyException("Malformed salted key: truncated " + field + " length");
+
+        length = buffer.getInt();
+
+        if (length <= 0 || length > max)
+            throw new InvalidKeyException("Malformed salted key: invalid " + field + " length " + length);
+
+        if (length > buffer.remaining())
+            throw new InvalidKeyException("Malformed salted key: truncated " + field);
+
+        return length;
     }
 
     public static byte[] generateSalt() {

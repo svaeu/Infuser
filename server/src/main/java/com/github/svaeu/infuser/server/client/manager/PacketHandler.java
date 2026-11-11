@@ -1,6 +1,7 @@
 package com.github.svaeu.infuser.server.client.manager;
 
 import com.github.svaeu.infuser.packets.Packet;
+import com.github.svaeu.infuser.packets.PacketBuffers;
 import com.github.svaeu.infuser.packets.PacketExecutor;
 import com.github.svaeu.infuser.packets.channel.ActionType;
 import com.github.svaeu.infuser.packets.encryption.ECDHEUtil;
@@ -93,10 +94,6 @@ public final class PacketHandler extends PacketExecutor {
     }
 
     @Override
-    protected void handleMediaPacket(Object... params) {}
-
-
-    @Override
     protected void handleChannelUpdate(Object... params) throws GeneralSecurityException, IOException, PacketParsingException {
         final ClientEntity client, provider;
         final ByteBuffer byteBuffer;
@@ -111,8 +108,7 @@ public final class PacketHandler extends PacketExecutor {
 
         byteBuffer = ByteBuffer.wrap(decryptBytes(client, payload));
 
-        roomIDBytes = new byte[byteBuffer.getInt()];
-        byteBuffer.get(roomIDBytes);
+        roomIDBytes = PacketBuffers.readLengthPrefixed(byteBuffer, "room id");
 
         roomID = new String(roomIDBytes, StandardCharsets.UTF_8);
         room = server.getVirtualRoomById(roomID);
@@ -123,8 +119,7 @@ public final class PacketHandler extends PacketExecutor {
             client.sendPacket(Packet.CHANNEL_UPDATE, new byte[0], false);
             return;
         }
-        saltedKey = new byte[byteBuffer.getInt()];
-        byteBuffer.get(saltedKey);
+        saltedKey = PacketBuffers.readLengthPrefixed(byteBuffer, "salted key");
 
         if(saltedKey.length == 0) {
             Optional.ofNullable(client.getVirtualRoom())

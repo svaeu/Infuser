@@ -26,6 +26,9 @@ import java.util.Set;
 
 public class TCPServer extends Thread {
 
+    private static final String DEFAULT_ROOM_TITLE = "general";
+    private static final int DEFAULT_ROOM_THRESHOLD = 50;
+
     private int servicePort;
     private ServerSocket serverSocket;
 
@@ -62,6 +65,15 @@ public class TCPServer extends Thread {
         this.IPFilter = new IPFilter();
 
         this.virtualRooms = databaseManager.loadRooms();
+        if(virtualRooms.isEmpty()) {
+            databaseManager.upsertRoom(new VirtualRoom(DEFAULT_ROOM_TITLE, DEFAULT_ROOM_THRESHOLD));
+            this.virtualRooms = databaseManager.loadRooms();
+
+            SessionLogger.log(
+                    "No channels found, created the default channel '" + DEFAULT_ROOM_TITLE + "'.",
+                    SessionLogger.LogType.INFO
+            );
+        }
 
         databaseManager.getAllIPs().forEach((ip, status) -> {
             IPFilter.ListType type;

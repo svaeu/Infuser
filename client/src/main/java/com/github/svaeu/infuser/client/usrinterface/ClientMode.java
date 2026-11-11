@@ -5,7 +5,6 @@ import java.util.concurrent.ExecutionException;
 
 public interface ClientMode extends Runnable {
     void displayMessage(String message) throws IOException;
-    void displayMedia(byte[] mediaData);
 
     String prompt(String message) throws ExecutionException, InterruptedException;
 

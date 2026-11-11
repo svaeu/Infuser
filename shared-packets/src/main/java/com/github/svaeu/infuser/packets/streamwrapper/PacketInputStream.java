@@ -19,6 +19,12 @@ import java.util.Map;
 
 public abstract class PacketInputStream extends DataInputStream {
 
+    /** Largest payload (in bytes) a single packet may carry. */
+    public static final int MAX_PACKET_SIZE = 1024 * 1024;
+
+    private static final int GCM_IV_LENGTH = 12;
+    private static final int GCM_TAG_LENGTH = 16;
+
     private final PacketProcessor packetProcessor;
 
     private final Map<Packet, byte[]> packetMeta = new HashMap<>();
@@ -47,6 +53,10 @@ public abstract class PacketInputStream extends DataInputStream {
 
         dataLength = headerBuffer.getInt();
 
+        // the length comes straight off the wire: reject it before allocating anything
+        if (dataLength < 0 || dataLength > MAX_PACKET_SIZE)
+            throw new MalformedPacketException("Invalid packet length: " + dataLength);
+
         packetMeta.put(packet, readDataBytes(dataLength));
         return packetMeta;
     }
@@ -54,11 +64,14 @@ public abstract class PacketInputStream extends DataInputStream {
     public byte[] getDecryptedDataBytes(byte[] encryptedDataWithIV, SecretKey secretKey) throws NoSuchPaddingException,
     NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
 
-        byte[] ivBytes = new byte[12];
-        byte[] encryptedBytes = new byte[encryptedDataWithIV.length - 12];
+        if (encryptedDataWithIV == null || encryptedDataWithIV.length < GCM_IV_LENGTH + GCM_TAG_LENGTH)
+            throw new BadPaddingException("Encrypted payload is too short");
 
-        System.arraycopy(encryptedDataWithIV, 0, ivBytes, 0, 12);
-        System.arraycopy(encryptedDataWithIV, 12, encryptedBytes, 0, encryptedBytes.length);
+        byte[] ivBytes = new byte[GCM_IV_LENGTH];
+        byte[] encryptedBytes = new byte[encryptedDataWithIV.length - GCM_IV_LENGTH];
+
+        System.arraycopy(encryptedDataWithIV, 0, ivBytes, 0, GCM_IV_LENGTH);
+        System.arraycopy(encryptedDataWithIV, GCM_IV_LENGTH, encryptedBytes, 0, encryptedBytes.length);
 
         Cipher cipher = Cipher.getInstance(ECDHEUtil.AES_TRANS);
         GCMParameterSpec spec = new GCMParameterSpec(128, ivBytes);

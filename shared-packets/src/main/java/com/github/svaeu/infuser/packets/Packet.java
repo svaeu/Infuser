@@ -6,7 +6,6 @@ public enum Packet {
     COMMAND_REQ(625),
     CHANNEL_UPDATE(743),
     CHAT_MESSAGE(834),
-    MEDIA_UPLOAD(945),
     SRV_MESSAGE(847),
     AUTH_LOGIN(483),
     REG_ACT(854),

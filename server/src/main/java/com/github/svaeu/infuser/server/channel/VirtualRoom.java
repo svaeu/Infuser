@@ -32,7 +32,6 @@ public class VirtualRoom {
 
         if(getRoomStates().contains(RoomState.LOCKED)) { return; }
 
-        //message sent to every client inside this room
         for(ClientEntity client : clients) {
             client.sendPacket(Packet.CHAT_MESSAGE, encryptedMessage, true);
         }

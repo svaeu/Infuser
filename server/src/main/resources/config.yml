@@ -1,0 +1,8 @@
+# The server copies this file into its working directory on first start if no
+# config.yml exists there. Edit that copy; this one is only the template.
+
+server:
+  port: 1207            # TCP port to listen on
+  isWhitelisted: false  # true = only IPs whitelisted in the database may connect
+  database:
+    path: inf_dev.db3   # SQLite file; created automatically if missing

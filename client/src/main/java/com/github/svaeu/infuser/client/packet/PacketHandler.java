@@ -6,6 +6,7 @@ import com.github.svaeu.infuser.client.util.ConsoleLogger;
 import com.github.svaeu.infuser.client.channel.Channel;
 import com.github.svaeu.infuser.packets.channel.ActionType;
 import com.github.svaeu.infuser.packets.Packet;
+import com.github.svaeu.infuser.packets.PacketBuffers;
 import com.github.svaeu.infuser.packets.PacketExecutor;
 import com.github.svaeu.infuser.packets.encryption.ECDHEUtil;
 import com.github.svaeu.infuser.packets.encryption.RSAUtil;
@@ -56,11 +57,8 @@ public final class PacketHandler extends PacketExecutor {
 
                 messageBuffer = ByteBuffer.wrap(decryptBytes(rawBytes));
 
-                username = new byte[messageBuffer.getInt()];
-                messageBuffer.get(username);
-
-                broadMessage = new byte[messageBuffer.getInt()];
-                messageBuffer.get(broadMessage);
+                username = PacketBuffers.readLengthPrefixed(messageBuffer, "username");
+                broadMessage = PacketBuffers.readLengthPrefixed(messageBuffer, "message");
 
                 client.getClientMode().displayMessage(String.format("~\033[1;37m%s\033[0m -> %s",
                         new String(username, StandardCharsets.UTF_8),
@@ -123,11 +121,6 @@ public final class PacketHandler extends PacketExecutor {
     }
 
     @Override
-    protected void handleMediaPacket(Object... params) {
-
-    }
-
-    @Override
     protected void handleChannelUpdate(Object... params) throws PacketParsingException, GeneralSecurityException, MalformedPacketException, IOException {
         final byte[] channelMeta;
         final ByteBuffer channelMetaBuffer;
@@ -143,8 +136,7 @@ public final class PacketHandler extends PacketExecutor {
         actionType = ActionType.getActionFromID(channelMetaBuffer.getInt());
         if(actionType == null) throw new MalformedPacketException("Unknown action type");
 
-        channelID = new byte[channelMetaBuffer.getInt()];
-        channelMetaBuffer.get(channelID);
+        channelID = PacketBuffers.readLengthPrefixed(channelMetaBuffer, "channel id");
 
         channelTitle = new String(channelID, StandardCharsets.UTF_8);
 

@@ -4,7 +4,6 @@ import com.github.svaeu.infuser.client.packet.PacketHandler;
 import com.github.svaeu.infuser.client.packet.PacketListener;
 import com.github.svaeu.infuser.client.usrinterface.cli.CLI;
 import com.github.svaeu.infuser.client.usrinterface.ClientMode;
-import com.github.svaeu.infuser.client.usrinterface.Interface;
 import com.github.svaeu.infuser.client.usrinterface.cli.command.ChannelJoinCommand;
 import com.github.svaeu.infuser.client.usrinterface.cli.command.ChannelListCommand;
 import com.github.svaeu.infuser.client.util.ConsoleLogger;
@@ -61,7 +60,6 @@ public class TCPClient extends Thread {
 
     private String username;
 
-    private final Interface anInterface;
     private Thread interThread;
     private ClientMode clientMode;
 
@@ -87,10 +85,9 @@ public class TCPClient extends Thread {
         RECONNECTING
     }
 
-    public TCPClient(String hostAddress, int port, Interface anInterface) {
+    public TCPClient(String hostAddress, int port) {
         this.hostAddress = hostAddress;
         this.port = port;
-        this.anInterface = anInterface;
         this.connectionState = ConnectionState.DISCONNECTED;
     }
 
@@ -106,7 +103,7 @@ public class TCPClient extends Thread {
         for(;;) {
             if(connectionState == ConnectionState.CONNECTED) {
                 try {
-                    Thread.sleep(2000); //avoiding tight loop
+                    Thread.sleep(2000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -125,12 +122,7 @@ public class TCPClient extends Thread {
 
                 clientMode.notifyToResume();
 
-                packetStream = new PacketOutputStream(clientSocket.getOutputStream()) {
-                    @Override
-                    public void writePacket(Packet packet, byte[] data) throws IOException {
-                        super.writePacket(packet, data);
-                    }
-                };
+                packetStream = new PacketOutputStream(clientSocket.getOutputStream()) {};
                 packetListener = new PacketListener(clientSocket.getInputStream(), new PacketProcessor(
                         new PacketHandler(this)), this);
                 packetListener.start();
@@ -167,19 +159,10 @@ public class TCPClient extends Thread {
     private ClientMode getInterface() {
         Logger.getLogger("").setLevel(Level.OFF);
 
-        switch (anInterface) {
-            case COMMAND_LINE -> {
-                return new CLI(this, Set.of(
-                        new ChannelJoinCommand(this),
-                        new ChannelListCommand(this)
-                ));
-            }
-            case GUI -> { }
-            default -> {
-                return null;
-            }
-        }
-        return null;
+        return new CLI(this, Set.of(
+                new ChannelJoinCommand(this),
+                new ChannelListCommand(this)
+        ));
     }
 
     private synchronized void performHandshake() throws IOException, InterruptedException,
