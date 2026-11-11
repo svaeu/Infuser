@@ -41,7 +41,9 @@ build/
 server_logs
 id_keys
 
-config.yml
+# runtime copies only: the template lives in server/src/main/resources/config.yml
+/config.yml
+/server/config.yml
 inf_dev.db3
 
 .enc_auth_token
